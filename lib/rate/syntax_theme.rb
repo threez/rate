@@ -1,22 +1,19 @@
 module Rate
   class SyntaxTheme
     MIMES = {
-      '.rb' => 'text/x-ruby'
+      '.rb' => 'text/x-ruby',
+      '.ru' => 'text/x-ruby',
+      '.html' => 'text/html',
+      '.htm' => 'text/html'
     }
 
     def initialize(theme)
       @theme = theme
       @lang_manager = Gtk::SourceLanguagesManager.new
-      #@lang_manager.available_languages.each do |v|
-      #  puts v.name
-      #end
-      #@lang_manager.lang_files_dirs.each do |v|
-      #  puts v
-      #end
-      #puts @lang_manager..get_language("text/html").name
     end
 
     def lang_for(ext)
+      return nil if MIMES[ext].nil?
       lang = @lang_manager.get_language(MIMES[ext])
       theme_lang(lang)
     end

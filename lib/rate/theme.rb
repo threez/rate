@@ -1,5 +1,9 @@
-require 'plist'
-require 'pp'
+begin
+  require 'plist'
+rescue LoadError
+  require 'rubygems'
+  require 'plist'
+end
 require 'ostruct'
 
 module Rate
