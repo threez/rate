@@ -16,24 +16,26 @@
 # You should have received a copy of the GNU General Public License
 # along with Rate (the ruby editor).  If not, see <http://www.gnu.org/licenses/>.
 #
-require 'gtk2'
-require 'gtksourceview'
+module Rate
+  class NotebookTab
+    attr_reader :view, :view_title, :controller
 
-# load general & support files
-[:support, :version, "model/theme", "model/language"].each do |file|
-  require File.dirname(__FILE__) + "/rate/#{file}"
-end
-
-# load the components
-#find runner
-%w{filer document notebook menu find editor}.each do |component_name|
-  # this requires model viev and controller based on the name
-  require_mvc component_name
-end
-
-if __FILE__ == $0 then
-  rate = Rate::EditorController.new(ARGV)
-  rate.show_all
-
-  Gtk.main
+    def initialize(view, view_title, controller)
+      @view, @view_title, @controller = 
+        view, view_title, controller
+    end
+    
+    def source_view
+      @controller.view
+    end
+    
+    def document
+      @controller.document
+    end
+    
+    def destroy
+      @view.destroy
+      @view_title.destroy
+    end
+  end
 end

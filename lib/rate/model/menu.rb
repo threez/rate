@@ -16,24 +16,20 @@
 # You should have received a copy of the GNU General Public License
 # along with Rate (the ruby editor).  If not, see <http://www.gnu.org/licenses/>.
 #
-require 'gtk2'
-require 'gtksourceview'
-
-# load general & support files
-[:support, :version, "model/theme", "model/language"].each do |file|
-  require File.dirname(__FILE__) + "/rate/#{file}"
-end
-
-# load the components
-#find runner
-%w{filer document notebook menu find editor}.each do |component_name|
-  # this requires model viev and controller based on the name
-  require_mvc component_name
-end
-
-if __FILE__ == $0 then
-  rate = Rate::EditorController.new(ARGV)
-  rate.show_all
-
-  Gtk.main
+module Rate
+  class Menu
+    NEW           = "<#{Rate::NAME}>/new"
+    SAVE          = "<#{Rate::NAME}>/save"
+    OPEN          = "<#{Rate::NAME}>/open"
+    CLOSE         = "<#{Rate::NAME}>/close"
+    QUIT          = "<#{Rate::NAME}>/quit"
+    TOGGLE_FILER  = "<#{Rate::NAME}>/toggle_filer"
+    ZOOM_IN       = "<#{Rate::NAME}>/zoom_in"
+    ZOOM_OUT      = "<#{Rate::NAME}>/zoom_out"
+    FIND          = "<#{Rate::NAME}>/find"
+    FIND_NEXT     = "<#{Rate::NAME}>/find_next"
+    FIND_PREV     = "<#{Rate::NAME}>/find_prev"
+    EXEC_IRB      = "<#{Rate::NAME}>/exec_start_irb"
+    EXEC_RUBY     = "<#{Rate::NAME}>/exec_start_ruby"
+  end
 end

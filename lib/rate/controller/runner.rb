@@ -16,24 +16,31 @@
 # You should have received a copy of the GNU General Public License
 # along with Rate (the ruby editor).  If not, see <http://www.gnu.org/licenses/>.
 #
-require 'gtk2'
-require 'gtksourceview'
+module Rate
+  class TaskRunnerController
+    def exec_start_ruby(document)
+      #if document.path.nil?
+        # create new window for output
+        win, text = create_temp_window(self)
 
-# load general & support files
-[:support, :version, "model/theme", "model/language"].each do |file|
-  require File.dirname(__FILE__) + "/rate/#{file}"
-end
-
-# load the components
-#find runner
-%w{filer document notebook menu find editor}.each do |component_name|
-  # this requires model viev and controller based on the name
-  require_mvc component_name
-end
-
-if __FILE__ == $0 then
-  rate = Rate::EditorController.new(ARGV)
-  rate.show_all
-
-  Gtk.main
+        # star process
+        Thread.new do
+          IO.popen("ruby -w", "r+") do |io|
+            io.puts(document.buffer.text)
+            io.close_write
+            while line = io.read(128)
+              text.buffer.insert(text.buffer.end_iter, line)
+            end
+          end
+          win.title = "Ruby - finished"
+        end
+      #else
+      #  system "start ruby -w -- #{document.path}"
+      #end
+    end
+    
+    def exec_start_irb
+      system "start irb -rubygems"
+    end
+  end
 end

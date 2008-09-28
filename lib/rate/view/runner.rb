@@ -16,24 +16,24 @@
 # You should have received a copy of the GNU General Public License
 # along with Rate (the ruby editor).  If not, see <http://www.gnu.org/licenses/>.
 #
-require 'gtk2'
-require 'gtksourceview'
-
-# load general & support files
-[:support, :version, "model/theme", "model/language"].each do |file|
-  require File.dirname(__FILE__) + "/rate/#{file}"
-end
-
-# load the components
-#find runner
-%w{filer document notebook menu find editor}.each do |component_name|
-  # this requires model viev and controller based on the name
-  require_mvc component_name
-end
-
-if __FILE__ == $0 then
-  rate = Rate::EditorController.new(ARGV)
-  rate.show_all
-
-  Gtk.main
+module Rate
+  class TaskRunnerView < Gtk::Window
+    def initialize(rate, title= "Ruby - running", font_size = 10)
+      super(title)
+    
+      @source_view = Gtk::SourceView.new()
+      @source_view.show_line_numbers = true
+      @source_view.editable = false
+      
+      scroll = Gtk::ScrolledWindow.new
+      scroll.add(@source_view)
+      
+      #format_text_view text, rate.theme
+      #font_for_source text, [font_size]
+       
+      set_default_size(640,240)
+      add scroll
+      show_all
+    end
+  end
 end

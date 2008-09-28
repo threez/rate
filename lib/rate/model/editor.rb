@@ -16,15 +16,3 @@
 # You should have received a copy of the GNU General Public License
 # along with Rate (the ruby editor).  If not, see <http://www.gnu.org/licenses/>.
 #
-module Rate
-  # Name of application
-  NAME = "Rate"
-  
-  module VERSION #:nodoc:
-    MAJOR = 0
-    MINOR = 0
-    TINY  = 1
-
-    STRING = [MAJOR, MINOR, TINY].join('.')
-  end
-end
