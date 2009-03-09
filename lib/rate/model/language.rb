@@ -18,83 +18,121 @@
 #
 
 begin
-  require "oniguruma"
+  require "coderay"
 rescue LoadError
   require "rubygems"
-  require "oniguruma"
+  require "coderay"
 end
 
 module Rate
-  class Syntax
-    extend DslMethods
-    dsl_method :pattern, :keywords
-    attr_reader :name, :scope
-    
-    def initialize(name, scope, &block)
-      @name, @scope = name.to_s, scope.to_s
-      instance_eval &block if block_given?
+  # in terms of coderay this is the abstract encoder for the text view element
+  # of gtkk
+  class Styler
+    def initialize()
+      @offsets = {}
     end
     
-    def regex
-      # generate the pattern if the pattern is nil
-      # this implyes that keywords is set otherwise
-      # throw an error
-      if @regex.nil? and @pattern.nil? and !@keywords.nil?
-        @pattern = '\b(' + @keywords.join('|') + ')\b'
-      elsif @pattern.nil? and !@keywords.nil?
-        raise "Error syntax element #{@name} (#{@scope}) has no pattern!"
+    # push one offset to the list. The name is the  
+    # name of the stack, the value the offset that
+    # should be saved for later used
+    def push_offset(name, value)
+      @offsets[name] = [] unless offset?(name)
+      @offsets[name] << value
+    end
+    
+    # pops last element of stack of passed name
+    def pop_offset(name)
+      @offsets[name].shift
+    end
+    
+    # returns true if the stack (name) contains a value
+    def offset?(name)
+      !@offsets[name].nil? and !@offsets[name].empty?
+    end
+
+    # highlight all elements of a tokenlist 
+    # start the highlighting with offset
+    def highlight(token_list, offset)
+      highlight_list = []
+      
+      token_list.each do |token, token_class|      
+        highlight_token(highlight_list, token, token_class, offset)
+        offset = calc_offset(offset, token) # move offset ahead
       end
       
-      # return the regex (but generate it once)
-      @regex ||= Oniguruma::ORegexp.new(@pattern)
-    rescue ArgumentError => ae
-      raise "Error in syntax element #{@name} (#{@scope}) illegal pattern syntax!\n#{ae}"    
+      return highlight_list
     end
-  end
-  
-  class Language
-    extend DslMethods
-    dsl_method "escape_char"
-    attr_reader :syntax_patterns
-  
-    def initialize(name, options, &block)
-      @name, @options = name.to_s, options
-      @syntax_patterns = []
-      begin
-        instance_eval &block if block_given?
-      rescue => ex
-        raise("Error in language definition (#{@name}): #{ex}")
+    
+    # create new entry as array of format
+    #   [start, end, tag_name]
+    def tag_mark(offset, token, scope)
+      [offset, offset + token.size, scope]
+    end
+    
+    # calulate new offset based on the string
+    def calc_offset(offset, token)
+      if token.class == String
+        #offset + token.size
+        offset + token.unpack("U*").size
+      else
+        offset
       end
     end
-    
-    def syntax(name, scope, &block)
-      syntax = Syntax.new(name, scope, &block)
-      @syntax_patterns << syntax
-    end
-    
-    def group
-       @options[:group]
+  end
+
+  class Language  
+    def initialize(name, options, &block)
+      @name, @options = name.to_s, options
     end
     
     def extensions
        @options[:extensions]
     end
     
-    def mimetypes
-       @options[:mimetypes]
+    def scanner
+       @options[:scanner]
     end
     
-    def method_missing(*args)
+    def styler
+       @options[:styler]
+    end
+    
+    # returns true whenever the document can be hightlighted otherwise false
+    def can_highlight?(document)
+      extname = File.extname(document.path.gsub("//", "/")) if document.path_given?
+    
+      if !extname.nil? and !extname.empty?
+        return extensions.include?(extname.gsub(".", "").to_sym)
+      end
+      
+      return false
+    end 
+    
+    # hightlight the given text starting at the offset
+    def highlight(text, offset = 0)
+      @styler ||= self.styler.new
+      @styler.highlight(CodeRay.scan(text, scanner), offset)
     end
   end
   
   class LanguageManager
+    def initialize()
+      @lang = []
+      
+      Dir["languages/*.rb"].each do |path|
+        @lang << Resource.load_language(path)
+      end
+    end
+  
     def self.instance
-      new
+      @@inst ||= new
     end
     
     def lang_for(document)
-      @@lang ||= Resource.load_language("F:/rate/rate/languages/ruby.rb")
+      @lang.each do |lang|
+        return lang if lang.can_highlight? document
+      end
+      return nil # if no language was found
     end
   end
 end

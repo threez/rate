@@ -110,6 +110,18 @@ module Rate
       modify_base(Gtk::StateType::PRELIGHT, Gdk::Color.parse(theme.editor.line_highlight))
       modify_text(Gtk::StateType::SELECTED, Gdk::Color.parse(theme.editor.caret))
       modify_base(Gtk::StateType::SELECTED, Gdk::Color.parse(theme.editor.selection))
+      coloring_text_view_cursor!(theme.editor.caret)
+    end
+    
+    # using a hack to style the cursor color of the source view
+    # color is a RGB color eg. #FFFFFF or a name like red or blue
+    def coloring_text_view_cursor!(color)
+      self.name = "rate-source-view-#{object_id}"
+      style = 'style "default-' + name + '" { 
+        GtkTextView::cursor_color = "' + color.to_s + '"
+      }
+      widget "*.' + name + '" style "default-' + name + '"'
+      Gtk::RC.parse_string(style) 
     end
   end
   

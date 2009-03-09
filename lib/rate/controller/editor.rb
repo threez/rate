@@ -52,7 +52,7 @@ module Rate
       add_drag_n_drop! views
         
       # load the default syntax theme
-      @theme = Resource.load_theme('F:/rate/rate/themes/railscasts.rb')
+      @theme = Resource.load_theme('themes/railscasts.rb')
       #Theme.new("./themes/Railscasts.tmTheme")
       
       # open files or folder

@@ -18,23 +18,11 @@
 #
 module Rate
   class TaskRunnerController
-    def exec_start_ruby(document)
-      #if document.path.nil?
-        # create new window for output
-        win, text = create_temp_window(self)
-
-        # star process
-        Thread.new do
-          IO.popen("ruby -w", "r+") do |io|
-            io.puts(document.buffer.text)
-            io.close_write
-            while line = io.read(128)
-              text.buffer.insert(text.buffer.end_iter, line)
-            end
-          end
-          win.title = "Ruby - finished"
-        end
-      #else
+    def self.exec_start_ruby(document)
+      unless document.path.nil?        
+        view = TaskRunnerView.new()
+        view.open_file(:ruby, document.path)        
+      end
       #  system "start ruby -w -- #{document.path}"
       #end
     end

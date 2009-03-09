@@ -161,8 +161,9 @@ module Rate
       # check for douplicate names
       # if there are some change the naming to be dirbased 
       # in this cases
-      tabs = @tabs.select do |t| 
-        t.document.name == tab.document.name
+      tabs = @tabs.select do |t|
+        # remove the modified tag (* ) if nessessary      
+        t.document.name.gsub(/[* ]*$/, "") == tab.document.name.gsub(/[* ]*$/, "")
       end
       #  display folder too if there are more documents equaly named
       if tabs.size > 1
@@ -185,7 +186,7 @@ module Rate
       view = NotebookTabView.new(document_controller.view)
       view_title = NotebookTabButton.new(document.name)
 
-      document.signal_connect("changed") do
+      document.signal_connect("modified-changed") do
         # remove local search results
         # FIXME: unfind
 
@@ -194,16 +195,20 @@ module Rate
         change_document_name(document)
       end
       
+      document.signal_connect("end-user-action") do |buffer|
+        change_document_name(document)
+      end
+      
+      document.signal_connect("changed") do
+        # change name if there is no change after undo
+        change_document_name(document)
+      end
+      
       Rate::Support.add_file_drag_and_drop(document_controller.view) do |path, uri|
         if File.exist?(path) and !File.directory?(path) then
           self.open_file(path)
         end
       end
-      
-      # FIXME: document.signal_connect("undo") do
-        # change name if there is no change after undo
-      #  change_document_name(document)
-      #end
 
       view_title.button.signal_connect("clicked") do
         # remove the document if the X button is pressed

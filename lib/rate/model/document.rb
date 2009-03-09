@@ -34,16 +34,25 @@ module Rate
       @language = false
       
       # setup handler for formatting the document
-      signal_connect("changed") do |buffer|
+      signal_connect("end-user-action") do |buffer|
         apply_syntax_highlight!
       end
+      
+      #signal_connect("insert-child-anchor") do |oself, iter, anchor|
+      #  puts [iter.offset, anchor].inspect
+      #end
+      
+      #signal_connect("insert-text") do |oself, iter, text, len|
+      #  puts [iter.offset, text, len].inspect
+      #  syntax_highlight!(text, iter.offset)
+      #end
       
       # try to fill the object if path is given
       unless (@path = path).nil?
         # one can't undo the initial filling of the document object
         self.non_undoable_action do
           self.text = File.open(path, "r") do |f|
-            f.read
+            f.read.gsub("\r\n", "\n") # remove windows CRLF
           end
         end
         
@@ -56,14 +65,49 @@ module Rate
     # language syntax matches
     def apply_syntax_highlight!
       if @language and highlight?
-        # remove all tags from buffer
-        remove_all_tags(start_iter, end_iter)
+        # kill the latest highlighter becasue we want the newest changes
+        @highlighter.kill if @highlighter
         
-        # and setup new tags for all patterns in the language
-        for syntax_element in @language.syntax_patterns do
-          apply_tag_regex(syntax_element.scope, syntax_element.regex)
+        @highlighter = Thread.new do
+          sleep 0.010 # sleep to reduce overhead of multiple begins
+          
+          begin
+            syntax_highlight!(self.text, 0)
+          rescue => ex
+            puts "Error on hightlight: #{ex}"
+            ex.backtrace.each { |l| puts " --> #{l}" }
+          end
+          
+          # no current highlighter
+          @highlighter = nil
         end
       end
+    end
+    
+    # apply syntax highklighting to the textmodel
+    def syntax_highlight!(text, offset)
+      last_end_i = get_iter_at_offset(offset)
+      
+      if @language and highlight?
+        @language.highlight(text, offset).each do |start_pos, end_pos, scope|
+          # start and end position for the tag
+          start_i = get_iter_at_offset(start_pos)
+          end_i = get_iter_at_offset(end_pos)
+
+          # remove all tags that where there before
+          remove_all_tags last_end_i, start_i
+          
+          # apply the new tag
+          apply_tag scope, start_i, end_i
+          
+          last_end_i = end_i
+        end
+      end
+    end
+    
+    # find a language to accomplish highlighting the document
+    def setup_highlight!
+      self.language = LanguageManager.instance.lang_for(self)
     end
 
     # return the basename of the opened document
@@ -92,27 +136,28 @@ module Rate
     # remove some \r\n and blank lines
     def before_save()
       # convert every thing to unix line feeds
-      ntext = text.gsub("\r\n", "\n")
+      #ntext = text.gsub("\r\n", "\n")
 
       # remove spaces on empty lines (avoid errors for git)
-      ntext = ntext.gsub(/^\s+$/, "")
+      #ntext = ntext.gsub(/^\s+$/, "")
 
       # remove spaces at end of lines
-      ntext = ntext.gsub(/\s+$/, "")
+      #ntext = ntext.gsub(/\s+$/, "")
 
       # assign new text
-      text = ntext
+      #self.text = ntext
     end
 
     def after_save()
       self.modified = false
-      signal_emit("changed")
+      setup_highlight! unless highlight?# will highlight after save 
+      signal_emit("end-user-action")
     end
 
     # save the document with the given path
     def save(path = nil)
       if modified? or !path.nil?
-        return false if before_save() == false
+        before_save()
 
         # save the new path of the file
         @path = path unless path.nil?
@@ -122,30 +167,16 @@ module Rate
           f.print text
         end
 
-        return false if after_save() == false
-        return true
-      else
-        return false        
+        after_save()   
       end
     end
     
     # setup the language of the document and enables highlighting
     def language=(lang, syntax_highlight = true)
       @language = lang
-      if syntax_highlight
+      if syntax_highlight and !lang.nil?
         self.highlight = true      
         apply_syntax_highlight!
-      end
-    end
-    
-    # applys a tag_name by searching for matches of the regex
-    def apply_tag_regex(tag_name, regex)
-      # make use of match_all method that is defined in support.rb
-      raise "#{tag_name} has a nil regex" if regex.nil?
-      regex.match_all(text) do |match|
-        start_of_region = get_iter_at_offset(match.begin(0))
-        end_of_region = get_iter_at_offset(match.end(0))
-        apply_tag(tag_name, start_of_region, end_of_region)
       end
     end
     
@@ -154,7 +185,7 @@ module Rate
       for tag in theme.tags do
         for scope in tag.scopes do 
           ttag = create_tag(scope, tag.style_hash)
-          puts " TAG: #{scope} - priority: #{ttag.priority}"
+          #puts " TAG: #{scope} - priority: #{ttag.priority}"
         end
       end
     end
@@ -180,6 +211,11 @@ module Rate
     # will turn syntax highlighting on/off
     def toggle_highlighting
       self.highlight = !highlight?
+      if highlight?
+        apply_syntax_highlight!
+      else
+        remove_all_tags start_iter, end_iter
+      end 
     end
   end
 end

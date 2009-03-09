@@ -111,7 +111,7 @@ module Rate
     end
     
     def on_menu_start_ruby
-      #exec_start_ruby(current_document)
+      TaskRunnerController.exec_start_ruby(current_tab.document)
     end
     
     def on_menu_toggle_line_nr

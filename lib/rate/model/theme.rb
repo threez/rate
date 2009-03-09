@@ -19,7 +19,7 @@
 module Rate
   class TagTheme
     extend DslMethods
-    dsl_method :background, :foreground, :italic
+    dsl_method :background, :foreground, :italic, :bold, :underline
     attr_reader :name, :scope
   
     def initialize(name, scope, &block)
@@ -32,7 +32,9 @@ module Rate
       tmp = {}
       tmp[:background] = @background if @background
       tmp[:foreground] = @foreground if @foreground
-      tmp[:italic] = @italic if @italic
+      tmp[:style] = Pango::FontDescription::STYLE_ITALIC if @italic
+      tmp[:weight] = Pango::FontDescription::WEIGHT_BOLD if @bold
+      tmp[:underline] = Pango::AttrUnderline::SINGLE if @underline
       tmp
     end
     

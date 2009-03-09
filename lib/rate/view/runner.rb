@@ -18,22 +18,19 @@
 #
 module Rate
   class TaskRunnerView < Gtk::Window
-    def initialize(rate, title= "Ruby - running", font_size = 10)
+    def initialize(title= "Ruby - running")
       super(title)
     
-      @source_view = Gtk::SourceView.new()
-      @source_view.show_line_numbers = true
-      @source_view.editable = false
-      
-      scroll = Gtk::ScrolledWindow.new
-      scroll.add(@source_view)
-      
-      #format_text_view text, rate.theme
-      #font_for_source text, [font_size]
+      @term = Vte::Terminal.new
        
       set_default_size(640,240)
-      add scroll
+      add Gtk::ScrolledWindow.new.add(@term)
       show_all
+    end
+    
+    def open_file(interpreter, file_path)
+      @term.fork_command(nil, [interpreter, "-w", "--", file_path], 
+        envv=nil, directory=File.dirname(file_path))
     end
   end
 end

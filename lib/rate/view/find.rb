@@ -37,6 +37,9 @@ module Rate
       
       # find exerything ignore the case
       #@search_ignore_case = Gtk::CheckButton.new("Ignore case")
+      
+      # switch the controlls of until a search was performed
+      controll_mode(false)
 
       # composite
       pack_start(@search_close, false, false)
@@ -51,6 +54,11 @@ module Rate
     def toggle_find
       self.visible = !visible?
       @search_entry.grab_focus if visible?
+    end
+    
+    # enable and disable the go up/down
+    def controll_mode(mode)
+      @search_go_up.visible = @search_go_down.visible = mode 
     end
   end
 end

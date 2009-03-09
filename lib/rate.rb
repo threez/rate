@@ -25,8 +25,7 @@ require 'gtksourceview'
 end
 
 # load the components
-#find runner
-%w{filer document notebook menu find editor}.each do |component_name|
+%w{filer document notebook menu find runner editor}.each do |component_name|
   # this requires model viev and controller based on the name
   require_mvc component_name
 end

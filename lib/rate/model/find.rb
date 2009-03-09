@@ -16,27 +16,30 @@
 # You should have received a copy of the GNU General Public License
 # along with Rate (the ruby editor).  If not, see <http://www.gnu.org/licenses/>.
 #
+
+begin
+  require "oniguruma"
+rescue LoadError
+  require "rubygems"
+  require "oniguruma"
+end
+
 module Rate
   # class for supporting the match_all method of Regexp
   class FindMatch < Struct.new(:text, :start_pos, :end_pos)
   end
 
-  class Find < Regexp
-    def initialize(search_expression)
-      super(search_expression, Regexp::MULTILINE + Regexp::EXTENDED)
-    end
-    
+  class Find < Oniguruma::ORegexp    
     # do a search on the text document
     def search(text)
-      # make use of the match_all method that is defined in
-      # support.rb
-      if md = match_all(text) and md.size > 0
-        @results = md
-        @current = 0
-        return current_match
-      else
-        return false
+      @results = []
+      match_all(text) do |match|
+        @results << match
       end
+      @current = 0 # set the cursor to the first match
+      
+      return false if @results.empty?
+      return @results.first
     end
     
     # returns the count of results that are found
@@ -75,30 +78,6 @@ module Rate
     # returns the match object for the current match
     def current_match
       @results[@current]
-    end
-    
-  private
-  
-    # matches all occurences of the Regexp in the passed text.
-    #   tm = "asd a asd asd
-    #   asd a a a asd sd a asd"
-    #   /\basd\b/ix.match_all(tm)  #=> [["asd", 0, 3],["asd", 6, 9],["asd", 10, 13],["asd", 14, 17],["asd", 24, 27],["asd", 33, 36]]
-    def match_all(text, offset = 0, matches = [])
-      if md = self.match(text)
-        # calc position in text stream based on offset
-        begin_match = md.begin(0) + offset
-        end_match = md.end(0) + offset
-
-        # add results to the metches table
-        matches << FindMatch.new(md[0], begin_match, end_match)
-
-        # try to find more
-        if (md.end(0) - md.begin(0)) > 0
-          match_all(md.post_match, end_match, matches)
-        end
-      else
-        return matches
-      end
     end
   end
 end

@@ -19,25 +19,36 @@
 module Rate
   class EditorView < Gtk::Window
     def initialize(menubar, filer_view, notebook_view, find_view,
-        icon_path = "./images/icon.png")
+        icon_path = "./textmate/16x16/TextMate.png")
       super(Rate::NAME)
       # hold views in instance variables
       @menubar, @filer_view, @notebook_view, @find_view = 
         menubar, filer_view, notebook_view, find_view
         
       # create status bar
-      @status_bar = Gtk::Statusbar.new
+      @status_bar = create_status_bar!()
 
       # editing area
       @content = Gtk::HPaned.new
-      @content.pack1(filer_view, true, false)
-      @content.pack2(notebook_view, true, false)
+      sidebarf = Gtk::Frame.new()
+      sidebar = Gtk::VBox.new()
+      sidebar.pack_start(@menubar, false, false)
+      sidebar.pack_end(filer_view)
+      sidebarf.add(sidebar)
+      
+      @content.pack1(sidebarf, true, false)
+      
+      notebook_area = Gtk::VBox.new()
+      notebook_area.pack_start(@notebook_view)
+      notebook_area.pack_end(@find_view, false, false)
+      
+      @content.pack2(notebook_area, true, false)
 
       # main area (composition)
       box = Gtk::VBox.new()
-      box.pack_start(@menubar, false, false)
+      #box.pack_start(@menubar, false, false)
       box.pack_start(@content)
-      box.pack_start(@find_view, false, false)
+      #box.pack_start(@find_view, false, false)
       box.pack_end(@status_bar, false, false)
       add(box)
       
@@ -61,12 +72,12 @@ module Rate
     
     # sets the editors text to the given document name
     def document_name=(document_name)
-      self.title = "#{NAME} - #{document_name}"
+      self.title = "#{Rate::NAME} - #{document_name}"
     end
     
     # resets the window title to display just the name of the app
     def no_document!
-      self.title = "#{NAME}"
+      self.title = "#{Rate::NAME}"
     end
     
     # adds a new message to the status stack
@@ -80,9 +91,22 @@ module Rate
       super()
 
       # disable some things by default
-      #[@filer_view, @find_view].each do |widget|
-      #  widget.visible = false
-      #end
+      @find_view.visible = false
+    end
+    
+  private
+  
+    # FIXME: add handlers to statusbar to update insert mode and language
+    def create_status_bar!()
+      statusbar = Gtk::Statusbar.new
+      
+      language_mode_frame = Gtk::Frame.new()
+      language_mode_frame.add(@language_mode_combobox = Gtk::ComboBox.new())
+      @language_mode_combobox.append_text("Ruby")
+      @language_mode_combobox.append_text("RHTML / ERB")
+      statusbar.pack_start(language_mode_frame, false, false)
+      
+      return statusbar
     end
   end
 end

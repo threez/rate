@@ -35,19 +35,31 @@ module Rate
     def toggle_find
       @view.toggle_find
       @find = nil
+      
+      # make continue editiong easyer
+      current_source_view.grab_focus unless @view.visible? if current_source_view
     end
   
     # execute the search with a regular expression
     def find(search_expression)
-      @find = Find.new(search_expression)
-      if match = @find.search(current_document.text)
+      begin
+        @find = Find.new(search_expression)
+        if match = @find.search(current_document.text)
+          @editor_controller.view.add_status(
+            "Search for /#{search_expression}/ has #{@find.results} results", "find")
+          select_text(match)
+          @view.controll_mode(true)
+        else
+          @editor_controller.view.add_status(
+            "Search for /#{search_expression}/ has ended with no results", "find")
+          @find = nil # remove the find object
+          @view.controll_mode(false)
+        end
+      rescue ArgumentError => ex # OnigurumaError
         @editor_controller.view.add_status(
-          "Search for /#{search_expression}/mx has #{@find.results} results", "find")
-        select_text(match)
-      else
-        @editor_controller.view.add_status(
-          "Search for /#{search_expression}/mx has ended with no results", "find")
+          "The search expression contains an error: [#{ex.message}]", "find")  
         @find = nil # remove the find object
+        @view.controll_mode(false)
       end
     end
     
@@ -72,16 +84,16 @@ module Rate
     # select the text that is positioned by the FindMatch object
     # This will scroll the window if the text is out of the viewport.
     def select_text(match)
-      text = current_document.text
-      start_of_region = current_document.get_iter_at_offset(match.start_pos)
+      start_of_region = current_document.get_iter_at_offset(match.begin(0))
+      end_of_region = current_document.get_iter_at_offset(match.end(0))
+      
       # place the cursor and select the text
-      current_document.place_cursor(start_of_region)
-      current_document.select_range(
-        start_of_region,
-        current_document.get_iter_at_offset(match.end_pos)
-      )
+      current_document.place_cursor start_of_region
+      current_document.select_range start_of_region, end_of_region
+      
       # scroll to current selection
       current_source_view.scroll_to_iter(start_of_region, 0.0, true, 0.0, 0.0)
+      
       # grag focus for fast editing
       current_source_view.grab_focus
     end

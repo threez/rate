@@ -26,9 +26,17 @@ module Rate
       @theme = theme
       @view = DocumentView.new(@document = document, @theme)
       
+      #@view.signal_connect("undo") do
+      #  @document.apply_syntax_highlight!
+      #end
+      
+      #@view.signal_connect("redo") do
+      #  @document.apply_syntax_highlight!
+      #end
+      
       # setup syntax highlighting
       @document.create_tags(@theme)
-      @document.language = LanguageManager.instance.lang_for(@document)
+      @document.setup_highlight!
     end
 
     # save the document, if the document doesn't point
